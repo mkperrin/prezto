@@ -1,9 +1,6 @@
 #
 # Executes commands at the start of an interactive session.
 #
-# Authors:
-#   Sorin Ionescu <sorin.ionescu@gmail.com>
-#
 
 # Source Prezto.
 if [[ -s "${ZDOTDIR:-$HOME}/.zprezto/init.zsh" ]]; then
@@ -11,3 +8,76 @@ if [[ -s "${ZDOTDIR:-$HOME}/.zprezto/init.zsh" ]]; then
 fi
 
 # Customize to your needs...
+
+unsetopt correct_all
+autoload -Uz history-beginning-search-menu
+zle -N history-beginning-search-menu
+bindkey '^X^X' history-beginning-search-menu
+bindkey '^R' history-incremental-search-backward
+bindkey '^E' history-incremental-search-forward
+bindkey -v
+
+# Python virtualenv
+source /usr/local/bin/virtualenvwrapper.sh
+workon twc
+
+alias sga='cat ~/.zprezto/modules/git/alias.zsh'
+alias watch='watch -c'
+
+# RBENV
+export RBENV_ROOT=/usr/local/var/rbenv
+if which rbenv > /dev/null; then eval "$(rbenv init -)"; fi
+
+# Editor
+export EDITOR=vim
+
+# CHEF
+eval "$(chef shell-init zsh)"
+export CHEF_REPO_DIR=${HOME}/Workspace/Deployment/chef
+
+# Deployment Python libraries
+export PYTHONPATH=${HOME}/Workspace/Deployment/scripts/lib
+
+# Go Path
+export GOPATH=${HOME}/Workspace/gocode
+
+# AWS
+AWS_BASE=~/.aws
+AWS_FILES=${AWS_BASE}/aws_files
+export AWS_DEFAULT_REGION="us-east-1"
+
+# AWS Credentials
+aws_on() {
+ export AWS_FULL=${1}
+ export AWS_ACCOUNT=$(echo ${1} | awk -F "_" '{print $1}')
+ # AWS API
+ export AWS_CREDENTIAL_FILE=${AWS_FILES}/credential-file_${AWS_ACCOUNT}
+ # EC2 API
+ export AWS_ACCESS_KEY=`cat ${AWS_CREDENTIAL_FILE} |grep AWSAccessKey |cut -d '=' -f 2`
+ export AWS_SECRET_KEY=`cat ${AWS_CREDENTIAL_FILE} |grep AWSSecretKey |cut -d '=' -f 2`
+ export AWS_REGION=$(echo ${1} | awk -F "_" '{print $2}')
+ # BOTO
+ export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY}
+ export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_KEY}
+ # WHISK
+ export WHISK_CONFIG=${CHEF_REPO_DIR}/config/whisk-${AWS_FULL}.yml
+ # CHEF SETTINGS
+ export CHEF_SERVER_URL=`cat ${CHEF_REPO_DIR}/config/chef-settings_${AWS_ACCOUNT} |grep chef_server_url |cut -d '=' -f 2`
+ export CHEF_USER=${USER}
+ export CHEF_CLIENT_KEY=${CHEF_USER}-${AWS_ACCOUNT}
+ export CHEF_VALIDATION_KEY=chef-validator-${AWS_ACCOUNT}
+ # S3CMD
+ alias s3cmd="s3cmd -c ${AWS_FILES}/s3cfg_${AWS_ACCOUNT}"
+}
+
+aws_off() {
+ unset AWS_FULL
+ unset AWS_ACCOUNT
+ unset AWS_CREDENTIAL_FILE
+ unset AWS_ACCESS_KEY
+ unset AWS_SECRET_KEY
+ unset AWS_REGION
+ unset AWS_ACCESS_KEY_ID
+ unset AWS_SECRET_ACCESS_KEY
+ unalias s3cmd
+}
