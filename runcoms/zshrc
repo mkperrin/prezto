@@ -35,9 +35,6 @@ export EDITOR=vim
 eval "$(chef shell-init zsh)"
 export CHEF_REPO_DIR=${HOME}/Workspace/Deployment/chef
 
-# Deployment Python libraries
-export PYTHONPATH=${HOME}/Workspace/Deployment/scripts/lib
-
 # Go Path
 export GOPATH=${HOME}/Workspace/gocode
 
