@@ -59,10 +59,12 @@ aws_on() {
  # WHISK
  export WHISK_CONFIG=${CHEF_REPO_DIR}/config/whisk-${AWS_FULL}.yml
  # CHEF SETTINGS
- export CHEF_SERVER_URL=`cat ${CHEF_REPO_DIR}/config/chef-settings_${AWS_ACCOUNT} |grep chef_server_url |cut -d '=' -f 2`
- export CHEF_USER=${USER}
- export CHEF_CLIENT_KEY=${CHEF_USER}-${AWS_ACCOUNT}
- export CHEF_VALIDATION_KEY=chef-validator-${AWS_ACCOUNT}
+ export CHEF_CREDENTIAL_FILE=~/.chef/config/chef-settings_${AWS_ACCOUNT}
+ export CHEF_SERVER_URL=`cat ${CHEF_CREDENTIAL_FILE} | grep chef_server_url |cut -d '=' -f 2`
+ export CHEF_USERNAME=`cat ${CHEF_CREDENTIAL_FILE} | grep chef_username |cut -d '=' -f 2`
+ export CHEF_VALIDATOR_NAME=`cat ${CHEF_CREDENTIAL_FILE} | grep chef_validator_name |cut -d '=' -f 2`
+ export CHEF_CLIENT_KEY=${CHEF_USERNAME}-${AWS_ACCOUNT}
+ export CHEF_VALIDATOR_KEY=${CHEF_VALIDATOR_NAME}-${AWS_ACCOUNT}
  # S3CMD
  alias s3cmd="s3cmd -c ${AWS_FILES}/s3cfg_${AWS_ACCOUNT}"
 }
