@@ -37,7 +37,15 @@ if [[ -e "/usr/local/packer" ]]; then
 fi
 
 # CHEF
-eval "$(chef shell-init zsh)"
+if type "chef" > /dev/null; then
+  eval "$(chef shell-init zsh)"
+fi
+
+# SSH Keychain
+if type "keychain" > /dev/null; then
+  keychain --agents ssh id_rsa_home id_rsa_twc
+  source ~/.keychain/$(hostname)-sh > /dev/null
+fi
 
 # Go Path
 export GOPATH=${HOME}/Workspace/gocode
