@@ -53,13 +53,13 @@ export GOPATH=${HOME}/Workspace/gocode
 # AWS
 AWS_BASE=~/.aws
 AWS_FILES=${AWS_BASE}/aws_files
-export AWS_DEFAULT_REGION="us-east-1"
 
 # AWS Credentials
 aws_on() {
  export AWS_FULL=${1}
  export AWS_ACCOUNT=$(echo ${1} | awk -F "_" '{print $1}')
  export AWS_REGION=$(echo ${1} | awk -F "_" '{print $2}')
+ export AWS_DEFAULT_REGION="$AWS_REGION"
 
  # AWS API
  export AWS_CREDENTIAL_FILE=${AWS_FILES}/credential-file_${AWS_ACCOUNT}
@@ -92,6 +92,7 @@ aws_off() {
  unset AWS_FULL
  unset AWS_ACCOUNT
  unset AWS_REGION
+ unset AWS_DEFAULT_REGION
  unset AWS_CREDENTIAL_FILE
  unset AWS_ACCESS_KEY
  unset AWS_SECRET_KEY
