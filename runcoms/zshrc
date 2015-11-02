@@ -36,6 +36,11 @@ if [[ -e "/usr/local/packer" ]]; then
   export PATH=/usr/local/packer:$PATH
 fi
 
+# Terraform
+if [[ -e "/usr/local/terraform" ]]; then
+  export PATH=/usr/local/terraform:$PATH
+fi
+
 # CHEF
 if type "chef" > /dev/null; then
   eval "$(chef shell-init zsh)"
