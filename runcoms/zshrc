@@ -32,13 +32,13 @@ if which rbenv > /dev/null; then eval "$(rbenv init -)"; fi
 export EDITOR=vim
 
 # Packer
-if [[ -e "/usr/local/packer" ]]; then
-  export PATH=/usr/local/packer:$PATH
+if [[ -e "/opt/packer" ]]; then
+  export PATH=/opt/packer:$PATH
 fi
 
 # Terraform
-if [[ -e "/usr/local/terraform" ]]; then
-  export PATH=/usr/local/terraform:$PATH
+if [[ -e "/opt/terraform" ]]; then
+  export PATH=/opt/terraform:$PATH
 fi
 
 # CHEF
@@ -91,6 +91,10 @@ aws_on() {
 
  # S3CMD
  alias s3cmd="s3cmd -c ${AWS_FILES}/s3cfg_${AWS_ACCOUNT}"
+
+ # TERRAFORM
+ export TF_VAR_project_aws_access_key=${AWS_ACCESS_KEY}
+ export TF_VAR_project_aws_secret_key=${AWS_SECRET_KEY}
 }
 
 aws_off() {
