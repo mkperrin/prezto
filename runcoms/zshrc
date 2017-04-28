@@ -59,54 +59,119 @@ export GOPATH=${HOME}/Workspace/gocode
 AWS_BASE=~/.aws
 AWS_FILES=${AWS_BASE}/aws_files
 
+# OKTA Script
+OKTA_EXEC=/usr/local/bin/okta_aws_login.py
+
 # AWS Credentials
 aws_on() {
- export AWS_FULL=${1}
- export AWS_ACCOUNT=$(echo ${1} | awk -F "_" '{print $1}')
- export AWS_REGION=$(echo ${1} | awk -F "_" '{print $2}')
- export AWS_DEFAULT_REGION="$AWS_REGION"
+  export AWS_FULL=${1}
+  export AWS_ACCOUNT=$(echo ${1} | awk -F "_" '{print $1}')
+  export AWS_REGION=$(echo ${1} | awk -F "_" '{print $2}')
+  export AWS_DEFAULT_REGION="$AWS_REGION"
 
- # AWS API
- export AWS_CREDENTIAL_FILE=${AWS_FILES}/credential-file_${AWS_ACCOUNT}
+  # AWS API
+  export AWS_CREDENTIAL_FILE=${AWS_FILES}/credential-file_${AWS_ACCOUNT}
 
- # EC2 API
- export AWS_ACCESS_KEY=`cat ${AWS_CREDENTIAL_FILE} |grep aws_access_key_id |cut -d '=' -f 2`
- export AWS_SECRET_KEY=`cat ${AWS_CREDENTIAL_FILE} |grep aws_secret_access_key |cut -d '=' -f 2`
+  # EC2 API/BOTO
+  export AWS_ACCESS_KEY=`cat ${AWS_CREDENTIAL_FILE} |grep aws_access_key_id |cut -d '=' -f 2`
+  export AWS_SECRET_KEY=`cat ${AWS_CREDENTIAL_FILE} |grep aws_secret_access_key |cut -d '=' -f 2`
+  export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY}
+  export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_KEY}
 
- # BOTO
- export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY}
- export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_KEY}
+  # CHEF SETTINGS
+  export CHEF_CREDENTIAL_FILE=~/.chef/config/chef-settings_${AWS_ACCOUNT}
+  export CHEF_SERVER_URL=`cat ${CHEF_CREDENTIAL_FILE} | grep chef_server_url |cut -d '=' -f 2`
+  export CHEF_USERNAME=`cat ${CHEF_CREDENTIAL_FILE} | grep chef_username |cut -d '=' -f 2`
+  export CHEF_VALIDATOR_NAME=`cat ${CHEF_CREDENTIAL_FILE} | grep chef_validator_name |cut -d '=' -f 2`
+  export CHEF_CLIENT_KEY=`cat ${CHEF_CREDENTIAL_FILE} | grep chef_client_key |cut -d '=' -f 2`
+  export CHEF_VALIDATOR_KEY=`cat ${CHEF_CREDENTIAL_FILE} | grep chef_validator_key |cut -d '=' -f 2`
+  export CHEF_REPO_DIR=`cat ${CHEF_CREDENTIAL_FILE} | grep chef_repo_dir |cut -d '=' -f 2`
+  export CLIENT_KEY=${CHEF_CLIENT_KEY}
 
- # CHEF SETTINGS
- export CHEF_CREDENTIAL_FILE=~/.chef/config/chef-settings_${AWS_ACCOUNT}
- export CHEF_SERVER_URL=`cat ${CHEF_CREDENTIAL_FILE} | grep chef_server_url |cut -d '=' -f 2`
- export CHEF_USERNAME=`cat ${CHEF_CREDENTIAL_FILE} | grep chef_username |cut -d '=' -f 2`
- export CHEF_VALIDATOR_NAME=`cat ${CHEF_CREDENTIAL_FILE} | grep chef_validator_name |cut -d '=' -f 2`
- export CHEF_CLIENT_KEY=`cat ${CHEF_CREDENTIAL_FILE} | grep chef_client_key |cut -d '=' -f 2`
- export CHEF_VALIDATOR_KEY=`cat ${CHEF_CREDENTIAL_FILE} | grep chef_validator_key |cut -d '=' -f 2`
- export CHEF_REPO_DIR=`cat ${CHEF_CREDENTIAL_FILE} | grep chef_repo_dir |cut -d '=' -f 2`
- export CLIENT_KEY=${CHEF_CLIENT_KEY}
+  # WHISK
+  export WHISK_CONFIG=${CHEF_REPO_DIR}/config/whisk-${AWS_FULL}.yml
 
- # WHISK
- export WHISK_CONFIG=${CHEF_REPO_DIR}/config/whisk-${AWS_FULL}.yml
+  # S3CMD
+  alias s3cmd="s3cmd -c ${AWS_FILES}/s3cfg_${AWS_ACCOUNT}"
 
- # S3CMD
- alias s3cmd="s3cmd -c ${AWS_FILES}/s3cfg_${AWS_ACCOUNT}"
+  # TERRAFORM
+  export TF_VAR_project_aws_access_key=${AWS_ACCESS_KEY}
+  export TF_VAR_project_aws_secret_key=${AWS_SECRET_KEY}
+}
 
- # TERRAFORM
- export TF_VAR_project_aws_access_key=${AWS_ACCESS_KEY}
- export TF_VAR_project_aws_secret_key=${AWS_SECRET_KEY}
+# AWS Credentials via OKTA
+aws_on_okta() {
+  if  ! which ${OKTA_EXEC} >  /dev/null 2>&1
+  then
+     echo "okta_aws_login.py does not exist or OKTA_EXEC not set"
+     return 1
+  fi
+
+  export AWS_FULL=${1}
+  export AWS_ACCOUNT=$(echo ${1} | awk -F "_" '{print $1}')
+  export AWS_REGION=$(echo ${1} | awk -F "_" '{print $2}')
+
+  # AWS API
+  export AWS_CREDENTIAL_FILE=${AWS_FILES}/credential-file-okta_${AWS_ACCOUNT}
+
+  # OKTA
+  source ${AWS_FILES}/okta_env_${AWS_ACCOUNT}
+  if [ ! -z "$2" ]; then  export OKTA_AWS_ROLE=$2; fi
+
+  # Run okta_aws_login.py to generate AWS credentials and save it to credential file
+  python3 ${OKTA_EXEC} -s -p ${AWS_ACCOUNT} -R ${AWS_REGION} -e ${AWS_CREDENTIAL_FILE}
+  # Sourcing credential file's variables
+  source ${AWS_CREDENTIAL_FILE}
+
+  # EC2 API/BOTO
+  export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY}
+  export AWS_SECRET_KEY=${AWS_SECRET_ACCESS_KEY}
+  export AWS_DEFAULT_PROFILE=${AWS_ACCOUNT}
+  export AWS_PROFILE=${AWS_DEFAULT_PROFILE}
+
+  # CHEF SETTINGS
+  export CHEF_CREDENTIAL_FILE=~/.chef/config/chef-settings_${AWS_ACCOUNT}
+  export CHEF_SERVER_URL=`cat ${CHEF_CREDENTIAL_FILE} | grep chef_server_url |cut -d '=' -f 2`
+  export CHEF_USERNAME=`cat ${CHEF_CREDENTIAL_FILE} | grep chef_username |cut -d '=' -f 2`
+  export CHEF_VALIDATOR_NAME=`cat ${CHEF_CREDENTIAL_FILE} | grep chef_validator_name |cut -d '=' -f 2`
+  export CHEF_CLIENT_KEY=`cat ${CHEF_CREDENTIAL_FILE} | grep chef_client_key |cut -d '=' -f 2`
+  export CHEF_VALIDATOR_KEY=`cat ${CHEF_CREDENTIAL_FILE} | grep chef_validator_key |cut -d '=' -f 2`
+  export CHEF_REPO_DIR=`cat ${CHEF_CREDENTIAL_FILE} | grep chef_repo_dir |cut -d '=' -f 2`
+  export CLIENT_KEY=${CHEF_CLIENT_KEY}
+
+  # WHISK
+  export WHISK_CONFIG=${CHEF_REPO_DIR}/config/whisk-${AWS_FULL}.yml
+
+  # S3CMD
+  alias s3cmd="s3cmd -c ${AWS_FILES}/s3cfg_${AWS_ACCOUNT}"
 }
 
 aws_off() {
- unset AWS_FULL
- unset AWS_ACCOUNT
- unset AWS_REGION
- unset AWS_DEFAULT_REGION
- unset AWS_CREDENTIAL_FILE
- unset AWS_ACCESS_KEY
- unset AWS_SECRET_KEY
- unset AWS_ACCESS_KEY_ID
- unset AWS_SECRET_ACCESS_KEY
- unalias s3cmd
+  unset AWS_FULL
+  unset AWS_ACCOUNT
+  unset AWS_REGION
+  unset AWS_DEFAULT_REGION
+  unset AWS_CREDENTIAL_FILE
+  unset AWS_ACCESS_KEY
+  unset AWS_SECRET_KEY
+  unset AWS_ACCESS_KEY_ID
+  unset AWS_SECRET_ACCESS_KEY
+  unset AWS_SECURITY_TOKEN
+  unset AWS_SESSION_TOKEN
+  unset CHEF_CREDENTIAL_FILE
+  unset CHEF_SERVER_URL
+  unset CHEF_USERNAME
+  unset CHEF_VALIDATOR_NAME
+  unset CHEF_CLIENT_KEY
+  unset CHEF_VALIDATOR_KEY
+  unset CHEF_REPO_DIR
+  unset CLIENT_KEY
+  unset WHISK_CONFIG
+  unset TF_VAR_project_aws_access_key
+  unset TF_VAR_project_aws_secret_key
+  unset TF_VAR_project_aws_token
+  unset OKTA_IDP_ENTRY_URL
+  unset OKTA_USERNAME
+  unset OKTA_AWS_ROLE
+  unalias s3cmd
 }
