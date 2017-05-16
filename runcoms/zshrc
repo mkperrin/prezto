@@ -32,13 +32,13 @@ if which rbenv > /dev/null; then eval "$(rbenv init -)"; fi
 export EDITOR=vim
 
 # Packer
-if [[ -e "/opt/packer" ]]; then
-  export PATH=/opt/packer:$PATH
+if [[ -e "/opt/packer/packer" ]]; then
+  export PATH=/opt/packer/packer:$PATH
 fi
 
 # Terraform
-if [[ -e "/opt/terraform" ]]; then
-  export PATH=/opt/terraform:$PATH
+if [[ -e "/opt/terraform/terraform" ]]; then
+  export PATH=/opt/terraform/terraform:$PATH
 fi
 
 # CHEF
