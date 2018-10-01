@@ -60,7 +60,7 @@ export GOPATH=${HOME}/Workspace/gocode
 
 # DirEnv
 if type "direnv" > /dev/null; then
-  eval "$(direnv hook bash)"
+  eval "$(direnv hook zsh)"
 fi
 
 # AWS
