@@ -63,6 +63,12 @@ if type "direnv" > /dev/null; then
   eval "$(direnv hook zsh)"
 fi
 
+# asdf
+if [[ -e "${HOME}/.asdf/asdf.sh" ]]; then
+  . ${HOME}/.asdf/asdf.sh
+  . ${HOME}/.asdf/completions/asdf.bash
+fi
+
 # AWS
 AWS_BASE=~/.aws
 AWS_FILES=${AWS_BASE}/aws_files
