@@ -66,7 +66,10 @@ fi
 # asdf
 if [[ -e "${HOME}/.asdf/asdf.sh" ]]; then
   . ${HOME}/.asdf/asdf.sh
-  . ${HOME}/.asdf/completions/asdf.bash
+  # append completions to fpath
+  fpath=(${ASDF_DIR}/completions $fpath)
+  # initialise completions with ZSH's compinit
+  autoload -Uz compinit && compinit
 fi
 
 # AWS
@@ -202,7 +205,7 @@ ibm_on() {
   export ETCDV3_USERNAME=`cat ${IBM_CREDENTIAL_FILE} | grep etcdv3_username | cut -d "=" -f 2`
   export ETCDV3_PASSWORD=`cat ${IBM_CREDENTIAL_FILE} | grep etcdv3_password | cut -d "=" -f 2`
   /usr/local/bin/ibmcloud login --apikey $IBMCLOUD_API_KEY -r $IBM_REGION
-  /usr/local/bin/ibmcloud target -g Default -o twc-sun-$IBM_ACCOUNT
+##  /usr/local/bin/ibmcloud target -g Default -o twc-sun-$IBM_ACCOUNT
 }
 
 ibm_off() {
