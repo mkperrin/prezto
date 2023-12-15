@@ -18,8 +18,8 @@ bindkey '^E' history-incremental-search-forward
 bindkey -v
 
 # Python virtualenv
-source /usr/local/bin/virtualenvwrapper.sh
-workon twc
+#source /usr/local/bin/virtualenvwrapper.sh
+#workon twc
 
 alias sga='cat ~/.zprezto/modules/git/alias.zsh'
 alias watch='watch -c'
@@ -136,7 +136,7 @@ aws_on_okta() {
   if [ ! -z "$2" ]; then  export OKTA_AWS_ROLE=$2; fi
 
   # Run okta_aws_login.py to generate AWS credentials and save it to credential file
-  python3 ${OKTA_EXEC} -s -p ${AWS_ACCOUNT} -R ${AWS_REGION} -e ${AWS_CREDENTIAL_FILE}
+  python3 ${OKTA_EXEC} -v -s -p ${AWS_ACCOUNT} -R ${AWS_REGION} -e ${AWS_CREDENTIAL_FILE}
   # Sourcing credential file's variables
   source ${AWS_CREDENTIAL_FILE}
 
@@ -190,6 +190,7 @@ aws_off() {
   unset OKTA_IDP_ENTRY_URL
   unset OKTA_USERNAME
   unset OKTA_AWS_ROLE
+  unset OKTA_AWS_DURATION
   unalias s3cmd
 }
 
