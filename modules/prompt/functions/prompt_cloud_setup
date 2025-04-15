@@ -45,6 +45,17 @@ function prompt_cloud_precmd {
   if (( $+functions[git-info] )); then
       git-info
   fi
+
+  if (( $+functions[aws_sso_expires_in] )); then
+      aws_sso_expires_in
+  fi
+
+  if [[ -n $AWS_FULL ]]; then
+      KUBECTX=`kubectx -c `
+      KUBENS=`kubens -c`
+      AWS_STATUS="%B%F{white}%K{blue}${AWS_FULL} (${AWS_PROFILE}) ${AWS_SSO_EXPIRES_IN}%k%f%b %B%F{yellow}${KUBECTX} (${KUBENS})%f%b"
+  fi
+
 }
 
 function prompt_cloud_help {
@@ -117,8 +128,10 @@ function prompt_cloud_setup {
     'rprompt' ''
 
   # Define prompts.
-  PROMPT='%B%F{$primary_color}${prefix}%f%b  %B%F{$secondary_color}%c%f%b ${git_info:+${(e)git_info[prompt]}} '
-  RPROMPT='%B%F${AWS_FULL} %T%f%b'
+##  PROMPT='%B%F{$primary_color}${prefix}%f%b  %B%F{$secondary_color}%c%f%b ${git_info:+${(e)git_info[prompt]}} '
+##  RPROMPT='%B%F${AWS_FULL} %T%f%b'
+  PROMPT='%B%F{white}%*%f%b %B%F{$secondary_color}${PWD/#$HOME/~}%f%b ${git_info:+${(e)git_info[prompt]}} ${AWS_STATUS}
+%B%F{$primary_color}${prefix}%f%b  '
 }
 
 prompt_cloud_setup "$@"
