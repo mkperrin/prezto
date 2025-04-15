@@ -80,7 +80,7 @@ AWS_FILES=${AWS_BASE}/aws_files
 OKTA_EXEC=/usr/local/bin/okta_aws_login.py
 
 # AWS Credentials
-aws_on() {
+aws_on_old() {
   export AWS_FULL=${1}
   export AWS_ACCOUNT=$(echo ${1} | awk -F "_" '{print $1}')
   export AWS_REGION=$(echo ${1} | awk -F "_" '{print $2}')
@@ -107,9 +107,6 @@ aws_on() {
 
   # WHISK
   export WHISK_CONFIG=${CHEF_REPO_DIR}/config/whisk-${AWS_FULL}.yml
-
-  # S3CMD
-  alias s3cmd="s3cmd -c ${AWS_FILES}/s3cfg_${AWS_ACCOUNT}"
 
   # TERRAFORM
   export TF_VAR_project_aws_access_key=${AWS_ACCESS_KEY}
@@ -158,9 +155,49 @@ aws_on_okta() {
 
   # WHISK
   export WHISK_CONFIG=${CHEF_REPO_DIR}/config/whisk-${AWS_FULL}.yml
+}
 
-  # S3CMD
-  alias s3cmd="s3cmd -c ${AWS_FILES}/s3cfg_${AWS_ACCOUNT}"
+# AWS Credentials via AWS SSO
+aws_on() {
+  aws_off
+  sleep 1
+
+  export AWS_FULL=${1}
+  export AWS_ACCOUNT=$(echo ${1} | awk -F "_" '{print $1}')
+  export AWS_REGION=$(echo ${1} | awk -F "_" '{print $2}')
+
+  # AWS API
+  export AWS_CREDENTIAL_FILE=${AWS_FILES}/credential-file-sso_${AWS_ACCOUNT}
+
+  # SSO
+  # Admin, PU, RO
+  AWS_ACCESS_LEVEL="Admin"
+  if [ ! -z "$2" ]; then AWS_ACCESS_LEVEL=$2; fi
+
+  export AWS_PROFILE=${AWS_ACCOUNT}_${AWS_ACCESS_LEVEL}
+
+  # Login if needed
+  aws sts get-caller-identity &> /dev/null
+  if [ "$?" != 0 ]; then
+    aws sso login
+  fi
+
+  aws configure export-credentials --format env >! $AWS_CREDENTIAL_FILE
+  # Sourcing credential file's variables
+  source ${AWS_CREDENTIAL_FILE}
+
+  # CHEF SETTINGS
+  export CHEF_CREDENTIAL_FILE=~/.chef/config/chef-settings_${AWS_ACCOUNT}
+  export CHEF_SERVER_URL=`cat ${CHEF_CREDENTIAL_FILE} | grep chef_server_url |cut -d '=' -f 2`
+  export CHEF_USERNAME=`cat ${CHEF_CREDENTIAL_FILE} | grep chef_username |cut -d '=' -f 2`
+  export CHEF_VALIDATOR_NAME=`cat ${CHEF_CREDENTIAL_FILE} | grep chef_validator_name |cut -d '=' -f 2`
+  export CHEF_CLIENT_KEY=`cat ${CHEF_CREDENTIAL_FILE} | grep chef_client_key |cut -d '=' -f 2`
+  export CHEF_VALIDATOR_KEY=`cat ${CHEF_CREDENTIAL_FILE} | grep chef_validator_key |cut -d '=' -f 2`
+  export CHEF_REPO_DIR=`cat ${CHEF_CREDENTIAL_FILE} | grep chef_repo_dir |cut -d '=' -f 2`
+  export CLIENT_KEY=${CHEF_CLIENT_KEY}
+
+  # WHISK
+  export WHISK_CONFIG=${CHEF_REPO_DIR}/config/whisk-${AWS_FULL}.yml
 }
 
 aws_off() {
@@ -191,7 +228,6 @@ aws_off() {
   unset OKTA_USERNAME
   unset OKTA_AWS_ROLE
   unset OKTA_AWS_DURATION
-  unalias s3cmd
 }
 
 # IBM Credentials
@@ -219,4 +255,41 @@ ibm_off() {
   unset IBM_CLOUD_API
   unset ETCDV3_USERNAME
   unset ETCDV3_PASSWORD
+}
+
+aws_sso_expires_in() {
+  if [[ -z $AWS_CREDENTIAL_EXPIRATION ]]; then
+    return 0
+  fi
+
+  # Convert ISO 8601 date to format macOS date can understand
+  # Strip the timezone part for simplicity
+  expiration_date=$(echo "${AWS_CREDENTIAL_EXPIRATION}" | sed 's/\([0-9-]*\)T\([0-9:]*\).*/\1 \2/')
+  expiration_seconds=$(date -u -j -f "%Y-%m-%d %H:%M:%S" "${expiration_date}" +%s)
+  current_seconds=$(date +%s)
+
+  # Calculate difference in seconds
+  seconds_remaining=$((expiration_seconds - current_seconds))
+
+  # Convert to a more readable format
+  days=$((seconds_remaining / 86400))
+  seconds_remaining=$((seconds_remaining % 86400))
+  hours=$((seconds_remaining / 3600))
+  seconds_remaining=$((seconds_remaining % 3600))
+  minutes=$((seconds_remaining / 60))
+  seconds=$((seconds_remaining % 60))
+
+  expires_text=""
+  if [[ $days -gt 0 ]]; then
+    expires_text="${days}d"
+  fi
+  if [[ $hours -gt 0 ]]; then
+    expires_text="${expires_text}${hours}h"
+  fi
+  if [[ $minutes -gt 0 ]]; then
+    expires_text="${expires_text}${minutes}m"
+  fi
+  expires_text="${expires_text}${seconds}s"
+
+  export AWS_SSO_EXPIRES_IN="$expires_text"
 }
