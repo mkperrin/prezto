@@ -64,10 +64,12 @@ if type "direnv" > /dev/null; then
 fi
 
 # asdf
-if [[ -e "${HOME}/.asdf/asdf.sh" ]]; then
-  . ${HOME}/.asdf/asdf.sh
+if type "asdf" > /dev/null; then
+  export PATH="${ASDF_DATA_DIR:-$HOME/.asdf}/shims:$PATH"
+  mkdir -p "${ASDF_DATA_DIR:-$HOME/.asdf}/completions"
+  asdf completion zsh >! "${ASDF_DATA_DIR:-$HOME/.asdf}/completions/_asdf"
   # append completions to fpath
-  fpath=(${ASDF_DIR}/completions $fpath)
+  fpath=(${ASDF_DATA_DIR:-$HOME/.asdf}/completions $fpath)
   # initialise completions with ZSH's compinit
   autoload -Uz compinit && compinit
 fi
