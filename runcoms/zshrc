@@ -74,6 +74,9 @@ if type "asdf" > /dev/null; then
   autoload -Uz compinit && compinit
 fi
 
+# LOCAL BIN
+export PATH=$HOME/.local/bin:$PATH
+
 # AWS
 AWS_BASE=~/.aws
 AWS_FILES=${AWS_BASE}/aws_files
