@@ -128,9 +128,9 @@ function prompt_cloud_setup {
     'rprompt' ''
 
   # Define prompts.
-##  PROMPT='%B%F{$primary_color}${prefix}%f%b  %B%F{$secondary_color}%c%f%b ${git_info:+${(e)git_info[prompt]}} '
+##  PROMPT='%B%F{$primary_color}${prefix}%f%b  %B%F{$secondary_color}%c%f%b ${git_info:+$(escape-eval ${(e)git_info[prompt]})} '
 ##  RPROMPT='%B%F${AWS_FULL} %T%f%b'
-  PROMPT='%B%F{white}%*%f%b %B%F{$secondary_color}${PWD/#$HOME/~}%f%b ${git_info:+${(e)git_info[prompt]}} ${AWS_STATUS}
+  PROMPT='%B%F{white}%*%f%b %B%F{$secondary_color}${PWD/#$HOME/~}%f%b ${git_info:+$(escape-eval ${(e)git_info[prompt]})} ${AWS_STATUS}
 %B%F{$primary_color}${prefix}%f%b  '
 }
 
