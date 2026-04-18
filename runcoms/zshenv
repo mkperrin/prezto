@@ -9,3 +9,6 @@
 if [[ ( "$SHLVL" -eq 1 && ! -o LOGIN ) && -s "${ZDOTDIR:-$HOME}/.zprofile" ]]; then
   source "${ZDOTDIR:-$HOME}/.zprofile"
 fi
+
+# Zscaler SSL proxy
+export NODE_EXTRA_CA_CERTS=/usr/local/share/ca-certificates/zscaler-root.pem
