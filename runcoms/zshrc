@@ -21,8 +21,10 @@ bindkey -v
 #source /usr/local/bin/virtualenvwrapper.sh
 #workon twc
 
+# Aliases
 alias sga='cat ~/.zprezto/modules/git/alias.zsh'
 alias watch='watch -c'
+source ~/.zprezto/aliases_kubectl.zsh
 
 # RBENV
 export RBENV_ROOT=/usr/local/var/rbenv
@@ -73,6 +75,9 @@ if type "asdf" > /dev/null; then
   # initialise completions with ZSH's compinit
   autoload -Uz compinit && compinit
 fi
+
+# Switcher
+source <(switcher init zsh)
 
 # LOCAL BIN
 export PATH=$HOME/.local/bin:$PATH
