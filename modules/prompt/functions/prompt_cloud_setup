@@ -50,10 +50,13 @@ function prompt_cloud_precmd {
       aws_sso_expires_in
   fi
 
+  AWS_STATUS=
   if [[ -n $AWS_FULL ]]; then
-      KUBECTX=`kubectx -c `
-      KUBENS=`kubens -c`
-      AWS_STATUS="%B%F{white}%K{blue}${AWS_FULL} (${AWS_PROFILE}) ${AWS_SSO_EXPIRES_IN}%k%f%b %B%F{yellow}${KUBECTX} (${KUBENS})%f%b"
+      local kube
+      kube=$(kubectl config view --minify -o jsonpath='{.current-context}|{..namespace}' 2>/dev/null)
+      KUBECTX=${kube%%|*}
+      KUBENS=${${kube#*|}:-default}
+      AWS_STATUS="%B%F{white}%K{blue}${AWS_FULL} (${AWS_PROFILE})${AWS_SSO_EXPIRES_IN:+ $AWS_SSO_EXPIRES_IN}%k%f%b %B%F{yellow}${KUBECTX} (${KUBENS})%f%b"
   fi
 
 }

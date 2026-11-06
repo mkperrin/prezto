@@ -98,12 +98,12 @@ aws_on() {
   [[ $region == $1 ]] && region=us-east-1
   local profile=${acct}_${2:-Admin}
 
-  if ! aws configure list-profiles | grep -qx -- "$profile"; then
+  if ! grep -qxF -- "[profile $profile]" "${AWS_CONFIG_FILE:-$HOME/.aws/config}"; then
     echo "aws_on: unknown profile '$profile'" >&2
     return 1
   fi
 
-  export AWS_FULL=$1 AWS_ACCOUNT=$acct
+  export AWS_FULL=${acct}_${region} AWS_ACCOUNT=$acct
   export AWS_PROFILE=$profile AWS_DEFAULT_PROFILE=$profile
   export AWS_REGION=$region AWS_DEFAULT_REGION=$region
 
@@ -151,6 +151,7 @@ aws_off() {
   unset AWS_SECRET_ACCESS_KEY
   unset AWS_SECURITY_TOKEN
   unset AWS_SESSION_TOKEN
+  unset AWS_CREDENTIAL_EXPIRATION
   unset CHEF_CREDENTIAL_FILE
   unset CHEF_SERVER_URL
   unset CHEF_USERNAME
@@ -165,39 +166,19 @@ aws_off() {
   unset TF_VAR_project_aws_token
 }
 
+zmodload zsh/datetime
+# Sets AWS_SSO_EXPIRES_IN for the prompt. Only meaningful when static creds are
+# loaded (AWS_STATIC=1 aws_on ...); SSO profile mode auto-refreshes.
+# Fork-free: runs on every prompt.
 aws_sso_expires_in() {
-  if [[ -z $AWS_CREDENTIAL_EXPIRATION ]]; then
-    return 0
-  fi
-
-  # Convert ISO 8601 date to format macOS date can understand
-  # Strip the timezone part for simplicity
-  expiration_date=$(echo "${AWS_CREDENTIAL_EXPIRATION}" | sed 's/\([0-9-]*\)T\([0-9:]*\).*/\1 \2/')
-  expiration_seconds=$(date -u -j -f "%Y-%m-%d %H:%M:%S" "${expiration_date}" +%s)
-  current_seconds=$(date +%s)
-
-  # Calculate difference in seconds
-  seconds_remaining=$((expiration_seconds - current_seconds))
-
-  # Convert to a more readable format
-  days=$((seconds_remaining / 86400))
-  seconds_remaining=$((seconds_remaining % 86400))
-  hours=$((seconds_remaining / 3600))
-  seconds_remaining=$((seconds_remaining % 3600))
-  minutes=$((seconds_remaining / 60))
-  seconds=$((seconds_remaining % 60))
-
-  expires_text=""
-  if [[ $days -gt 0 ]]; then
-    expires_text="${days}d"
-  fi
-  if [[ $hours -gt 0 ]]; then
-    expires_text="${expires_text}${hours}h"
-  fi
-  if [[ $minutes -gt 0 ]]; then
-    expires_text="${expires_text}${minutes}m"
-  fi
-  expires_text="${expires_text}${seconds}s"
-
-  export AWS_SSO_EXPIRES_IN="$expires_text"
+  typeset -g AWS_SSO_EXPIRES_IN=
+  [[ -n $AWS_CREDENTIAL_EXPIRATION ]] || return 0
+  local TZ=UTC t
+  strftime -r -s t '%Y-%m-%dT%H:%M:%S' ${AWS_CREDENTIAL_EXPIRATION[1,19]} 2>/dev/null || return 0
+  local s=$(( t - EPOCHSECONDS )) d h m out=
+  (( s <= 0 )) && { AWS_SSO_EXPIRES_IN="creds expired"; return 0; }
+  (( d = s / 86400, h = s % 86400 / 3600, m = s % 3600 / 60 ))
+  (( d )) && out+="${d}d"
+  (( d || h )) && out+="${h}h"
+  AWS_SSO_EXPIRES_IN="${out}${m}m"
 }
