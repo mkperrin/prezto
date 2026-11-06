@@ -165,33 +165,6 @@ aws_off() {
   unset TF_VAR_project_aws_token
 }
 
-# IBM Credentials
-ibm_on() {
-  export IBM_FULL=${1}
-  export IBM_ACCOUNT=$(echo ${1} | awk -F "_" '{print $1}')
-  export IBM_REGION=$(echo ${1} | awk -F "_" '{print $2}')
-  export IBM_CREDENTIAL_FILE=~/.ibm/credential-file_ibm-${IBM_ACCOUNT}
-  export IAAS_CLASSIC_USERNAME=`cat ${IBM_CREDENTIAL_FILE} | grep softlayer_username |cut -d '=' -f 2`
-  export IAAS_CLASSIC_API_KEY=`cat ${IBM_CREDENTIAL_FILE} | grep softlayer_api_key |cut -d '=' -f 2`
-  export IBMCLOUD_API_KEY=`cat ${IBM_CREDENTIAL_FILE} | grep cloud_api_key |cut -d '=' -f 2`
-  export ETCDV3_USERNAME=`cat ${IBM_CREDENTIAL_FILE} | grep etcdv3_username | cut -d "=" -f 2`
-  export ETCDV3_PASSWORD=`cat ${IBM_CREDENTIAL_FILE} | grep etcdv3_password | cut -d "=" -f 2`
-  /usr/local/bin/ibmcloud login --apikey $IBMCLOUD_API_KEY -r $IBM_REGION
-##  /usr/local/bin/ibmcloud target -g Default -o twc-sun-$IBM_ACCOUNT
-}
-
-ibm_off() {
-  unset IBM_FULL
-  unset IBM_ACCOUNT
-  unset IBM_REGION
-  unset IBM_CREDENTIAL_FILE
-  unset IBM_SL_USERNAME
-  unset IBM_SL_API
-  unset IBM_CLOUD_API
-  unset ETCDV3_USERNAME
-  unset ETCDV3_PASSWORD
-}
-
 aws_sso_expires_in() {
   if [[ -z $AWS_CREDENTIAL_EXPIRATION ]]; then
     return 0
