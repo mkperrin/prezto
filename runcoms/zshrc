@@ -169,39 +169,40 @@ aws_on_okta() {
 
 # AWS Credentials via AWS SSO
 aws_on() {
+  # Usage: aws_on <account>[_<region>] [Admin|RO]
+  #   Sets AWS_PROFILE only; SDKs/CLI/kubectl refresh creds from the SSO token.
+  #   AWS_STATIC=1 aws_on ...  -> also export static session keys for legacy tools.
+  [[ -z $1 ]] && { echo "usage: aws_on <account>[_<region>] [Admin|RO]"; return 1; }
   aws_off
-  sleep 0.2
 
-  export AWS_FULL=${1}
-  export AWS_ACCOUNT=$(echo ${1} | awk -F "_" '{print $1}')
-  export AWS_REGION=$(echo ${1} | awk -F "_" '{print $2}')
+  local acct=${1%%_*} region=${1#*_}
+  [[ $region == $1 ]] && region=us-east-1
+  local profile=${acct}_${2:-Admin}
 
-  # AWS API
-  export AWS_CREDENTIAL_FILE=${AWS_FILES}/credential-file-sso_${AWS_ACCOUNT}
-
-  # SSO
-  # Admin, PU, RO
-  AWS_ACCESS_LEVEL="Admin"
-  if [ ! -z "$2" ]; then AWS_ACCESS_LEVEL=$2; fi
-
-  export AWS_PROFILE=${AWS_ACCOUNT}_${AWS_ACCESS_LEVEL}
-
-  # Login if needed
-  aws sts get-caller-identity &> /dev/null
-  if [ "$?" != 0 ]; then
-    aws sso login
+  if ! aws configure list-profiles | grep -qx -- "$profile"; then
+    echo "aws_on: unknown profile '$profile'" >&2
+    return 1
   fi
 
-  aws configure export-credentials --format env >! $AWS_CREDENTIAL_FILE
-  # Sourcing credential file's variables
-  source ${AWS_CREDENTIAL_FILE}
+  export AWS_FULL=$1 AWS_ACCOUNT=$acct
+  export AWS_PROFILE=$profile AWS_DEFAULT_PROFILE=$profile
+  export AWS_REGION=$region AWS_DEFAULT_REGION=$region
 
-  # EC2 API/BOTO Legacy
-  export AWS_ACCESS_KEY=${AWS_ACCESS_KEY_ID}
-  export AWS_SECRET_KEY=${AWS_SECRET_ACCESS_KEY}
-  export AWS_SECURITY_TOKEN=${AWS_SESSION_TOKEN}
-  export AWS_DEFAULT_PROFILE=${AWS_PROFILE}
-#  export AWS_PROFILE=${AWS_DEFAULT_PROFILE}
+  # Login if needed
+  if ! aws sts get-caller-identity &>/dev/null; then
+    aws sso login --sso-session TWC || return 1
+  fi
+
+  # Static creds only for legacy tools that can't read SSO profiles.
+  # They do NOT auto-refresh and override AWS_PROFILE for every tool in this shell.
+  if [[ -n $AWS_STATIC ]]; then
+    local creds
+    creds=$(aws configure export-credentials --format env) || return 1
+    eval "$creds"
+    export AWS_ACCESS_KEY=$AWS_ACCESS_KEY_ID
+    export AWS_SECRET_KEY=$AWS_SECRET_ACCESS_KEY
+    export AWS_SECURITY_TOKEN=$AWS_SESSION_TOKEN
+  fi
 
   # CHEF SETTINGS
   export CHEF_CREDENTIAL_FILE=~/.chef/config/chef-settings_${AWS_ACCOUNT}
@@ -218,6 +219,8 @@ aws_on() {
 }
 
 aws_off() {
+  unset AWS_PROFILE
+  unset AWS_DEFAULT_PROFILE
   unset AWS_FULL
   unset AWS_ACCOUNT
   unset AWS_REGION
